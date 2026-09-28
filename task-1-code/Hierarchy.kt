@@ -85,8 +85,8 @@ fun Hierarchy.filter(nodeIdPredicate: (Int) -> Boolean): Hierarchy {
     }
 
     return ArrayBasedHierarchy(
-        kept.map { nodeId(it) }.toIntArray(),
-        kept.map { depth(it) }.toIntArray(),
+        IntArray(kept.size) { nodeId(kept[it]) },
+        IntArray(kept.size) { depth(kept[it]) },
     )
 
 }
