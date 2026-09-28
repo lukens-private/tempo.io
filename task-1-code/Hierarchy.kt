@@ -70,8 +70,24 @@ interface Hierarchy {
  */
 fun Hierarchy.filter(nodeIdPredicate: (Int) -> Boolean): Hierarchy {
 
-  // todo implement
-  return ArrayBasedHierarchy(IntArray(0), IntArray(0))
+    var excludedDepth = Int.MAX_VALUE
+
+    val kept = (0 until size).filter { index ->
+
+        val depth = depth(index)
+        val inScope = depth <= excludedDepth
+        val keep = inScope && nodeIdPredicate(nodeId(index))
+
+        if (inScope) excludedDepth = if (keep) Int.MAX_VALUE else depth
+
+        keep
+        
+    }
+
+    return ArrayBasedHierarchy(
+        kept.map { nodeId(it) }.toIntArray(),
+        kept.map { depth(it) }.toIntArray(),
+    )
 
 }
 
