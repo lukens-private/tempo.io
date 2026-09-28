@@ -81,7 +81,7 @@ fun Hierarchy.filter(nodeIdPredicate: (Int) -> Boolean): Hierarchy {
         if (inScope) excludedDepth = if (keep) Int.MAX_VALUE else depth
 
         keep
-        
+
     }
 
     return ArrayBasedHierarchy(
@@ -106,21 +106,139 @@ class ArrayBasedHierarchy(
 
 class FilterTest {
 
-  @Test
-  fun testFilter() {
-  
-    val unfiltered: Hierarchy = ArrayBasedHierarchy(
-      intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
-      intArrayOf(0, 1, 2, 3, 1, 0, 1, 0, 1, 1, 2))
-    
-    val filteredActual: Hierarchy = unfiltered.filter { nodeId -> nodeId % 3 != 0 }
-    
-    val filteredExpected: Hierarchy = ArrayBasedHierarchy(
-      intArrayOf(1, 2, 5, 8, 10, 11),
-      intArrayOf(0, 1, 1, 0, 1, 2))
-    
-    assertEquals(filteredExpected.formatString(), filteredActual.formatString())
-    
-  }
-  
+    private val example: Hierarchy = ArrayBasedHierarchy(
+        intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+        intArrayOf(0, 1, 2, 3, 1, 0, 1, 0, 1, 1, 2))
+
+    private val empty: Hierarchy = ArrayBasedHierarchy(intArrayOf(), intArrayOf())
+
+    @Test
+    fun testFilter() {
+
+        val unfiltered: Hierarchy = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11),
+            intArrayOf(0, 1, 2, 3, 1, 0, 1, 0, 1, 1, 2))
+
+        val filteredActual: Hierarchy = unfiltered.filter { nodeId -> nodeId % 3 != 0 }
+
+        val filteredExpected: Hierarchy = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 5, 8, 10, 11),
+            intArrayOf(0, 1, 1, 0, 1, 2))
+
+        assertEquals(filteredExpected.formatString(), filteredActual.formatString())
+
+    }
+
+    @Test
+    fun `empty hierarchy filters to empty`() {
+        assertEquals(empty.formatString(), empty.filter { true }.formatString())
+    }
+
+    @Test
+    fun `all nodes passing returns an identical hierarchy`() {
+        assertEquals(example.formatString(), example.filter { true }.formatString())
+    }
+
+    @Test
+    fun `no nodes passing returns an empty hierarchy`() {
+        assertEquals(empty.formatString(), example.filter { false }.formatString())
+    }
+
+    @Test
+    fun `failing root removes its whole tree but not other trees`() {
+
+        val unfiltered = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 3, 4),
+            intArrayOf(0, 1, 0, 1))
+
+        val expected = ArrayBasedHierarchy(
+            intArrayOf(3, 4),
+            intArrayOf(0, 1))
+
+        assertEquals(expected.formatString(), unfiltered.filter { it != 1 }.formatString())
+
+    }
+
+    @Test
+    fun `descendants of a failing node are removed even if they pass`() {
+
+        val unfiltered = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 3, 4),
+            intArrayOf(0, 1, 2, 3))
+
+        val expected = ArrayBasedHierarchy(
+            intArrayOf(1),
+            intArrayOf(0))
+
+        assertEquals(expected.formatString(), unfiltered.filter { it != 2 }.formatString())
+
+    }
+
+    @Test
+    fun `sibling after an excluded subtree is kept`() {
+
+        val unfiltered = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 3, 4),
+            intArrayOf(0, 1, 2, 1))
+
+        val expected = ArrayBasedHierarchy(
+            intArrayOf(1, 4),
+            intArrayOf(0, 1))
+
+        assertEquals(expected.formatString(), unfiltered.filter { it != 2 }.formatString())
+
+    }
+
+    @Test
+    fun `depth dropping by more than one after an excluded subtree is handled`() {
+
+        val unfiltered = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 3, 4, 5, 6),
+            intArrayOf(0, 1, 2, 3, 1, 0))
+
+        val expected = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 5, 6),
+            intArrayOf(0, 1, 1, 0))
+
+        assertEquals(expected.formatString(), unfiltered.filter { it != 3 }.formatString())
+
+    }
+
+    @Test
+    fun `consecutive failing siblings are each excluded`() {
+
+        val unfiltered = ArrayBasedHierarchy(
+            intArrayOf(1, 2, 3, 4),
+            intArrayOf(0, 1, 1, 1))
+
+        val expected = ArrayBasedHierarchy(
+            intArrayOf(1, 4),
+            intArrayOf(0, 1))
+
+        assertEquals(expected.formatString(), unfiltered.filter { it != 2 && it != 3 }.formatString())
+
+    }
+
+    @Test
+    fun `predicate is not called for descendants of an excluded node`() {
+
+        val called = mutableListOf<Int>()
+
+        example.filter { called += it; it % 3 != 0 }
+
+        assertEquals(listOf(1, 2, 3, 5, 6, 8, 9, 10, 11), called)
+
+    }
+
+    @Test
+    fun `original hierarchy is unchanged`() {
+
+        val before = example.formatString()
+
+        example.filter { it % 2 == 0 }
+
+        assertEquals(before, example.formatString())
+
+    }
+
 }
