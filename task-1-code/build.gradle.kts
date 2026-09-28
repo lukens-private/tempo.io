@@ -10,7 +10,7 @@ repositories {
 }
 
 kotlin {
-    jvmToolchain(24)
+    jvmToolchain(21)
     sourceSets.named("test") {
         kotlin.setSrcDirs(listOf("."))
         kotlin.include("*.kt")
@@ -23,7 +23,4 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
-}
-kotlin {
-    jvmToolchain(24)
 }
